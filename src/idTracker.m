@@ -122,16 +122,27 @@ function datosegm=idTracker(directorio,nombrearchivo,directorio_destino,n_peces,
 
 encriptar=false;
 existedatosegm=false;
+global datosegm
+
 
 try
     
-    if nargin==0
-        directorio=ultimodir;
-        [nombrearchivo,directorio]=uigetfile('*.*','Select video file',directorio);
-        ultimodir(directorio);
-        if isequal(nombrearchivo,0)
-            error('idTracker:WindowClosed','No file selected')
-        end
+    switch nargin
+    
+        case 0
+            directorio=ultimodir;
+            [nombrearchivo,directorio]=uigetfile('*.*','Select video file',directorio);
+            ultimodir(directorio);
+            if isequal(nombrearchivo,0)
+                error('idTracker:WindowClosed','No file selected')
+            end
+
+        case 1
+            load(directorio)
+            datosegm=variable;
+            existedatosegm=true;
+            datosegm.reutiliza.datosegm=true;
+            referencias=[];
     end
     
     if nargin~=1 % Si sólo hay un argumento de entrada, será datosegm
@@ -225,10 +236,6 @@ try
         
         % Cosas que todavía falta integrar en el panel:
         datosegm.mascara_intensmed=mascara_intensmed;
-    else
-        datosegm=directorio;
-        datosegm.reutiliza.datosegm=true;
-        referencias=[];
     end
     
     datosegm.version='20140805T102158';
@@ -346,7 +353,7 @@ try
                 datosegm.n_procesadores_real=matlabpool('size');
             end
             
-            if isfield(h_panel,'n_procesadores') && ishandle(h_panel.n_procesadores)
+            if isfield(h_panel,'n_procesadores') && ishandle(h_panel.n_procesadores && datosegm.muestrapanel)
                 set(h_panel.n_procesadores,'String',num2str(datosegm.n_procesadores_real))
                 drawnow
             end
@@ -811,12 +818,16 @@ try
                     
                     if datosegm.n_peces>1 || (isfield(datosegm,'siemprerefs') && datosegm.siemprerefs)
                         clear referencias
-                        set(h_panel.waitTrajectories,'XData',[0 0 .1 .1])
-                        set(h_panel.textowaitTrajectories,'String',[num2str(round(sum(.1)*100)) ' %'])
+                        if datosegm.muestrapanel
+                            set(h_panel.waitTrajectories,'XData',[0 0 .1 .1])
+                            set(h_panel.textowaitTrajectories,'String',[num2str(round(sum(.1)*100)) ' %'])
+                        end
                         load([datosegm.directorio 'solapamiento']);     
                         solapamiento=variable;
-                        set(h_panel.waitTrajectories,'XData',[0 0 .25 .25])
-                        set(h_panel.textowaitTrajectories,'String',[num2str(round(sum(.25)*100)) ' %'])
+                        if datosegm.muestrapanel
+                            set(h_panel.waitTrajectories,'XData',[0 0 .25 .25])
+                            set(h_panel.textowaitTrajectories,'String',[num2str(round(sum(.25)*100)) ' %'])
+                        end
                         idtrozos=mancha2id2idtrozos(datosegm,trozos,solapos,mancha2id);
                         probtrozos=idtrozos2probtrozos(idtrozos);
                         % idtrozos=trozos2id_trozos(datosegm,trozos,solapos,indvalidos,referencias,[]);
@@ -826,8 +837,10 @@ try
                         save([datosegm.directorio 'idtrozos.mat'],'variable')
                         clear idprobtrozos
                         
-                        set(h_panel.waitTrajectories,'XData',[0 0 .5 .5])
-                        set(h_panel.textowaitTrajectories,'String',[num2str(round(sum(.5)*100)) ' %'])
+                        if datosegm.muestrapanel
+                            set(h_panel.waitTrajectories,'XData',[0 0 .5 .5])
+                            set(h_panel.textowaitTrajectories,'String',[num2str(round(sum(.5)*100)) ' %'])
+                        end
                         
 %                         fprintf(datosegm.id_log,'%s - idtrozos done\n',datestr(now,30));
                         
@@ -871,21 +884,14 @@ try
                     variable=man2pez;
                     save([datosegm.directorio 'mancha2pez.mat'],'variable')
                     clear man2pez
-%                     fprintf(datosegm.id_log,'%s - mancha2pez done\n',datestr(now,30));
 
-                    set(h_panel.waitTrajectories,'XData',[0 0 .75 .75])
-                    set(h_panel.textowaitTrajectories,'String',[num2str(round(sum(.75)*100)) ' %'])
-                        
-%                     variable=load([datosegm.directorio 'npixelsyotros.mat']);
-%                     mancha2centro=variable.mancha2centro;
-%                     [trajectories,probtrajectories]=mancha2pez2trayectorias(datosegm,mancha2pez,trozos,probtrozos_relac,mancha2centro);
-%                     save([datosegm.directorio 'trajectories.mat'],'trajectories','probtrajectories')
-%                     save([datosegm.directorio_videos 'trajectories.mat'],'trajectories','probtrajectories')
-% %                     trajectories2txt(trajectories,[datosegm.directorio 'trajectories.txt'])
-%                     trajectories2txt(trajectories,[datosegm.directorio_videos 'trajectories.txt'])
+                    if datosegm.muestrapanel
+                        set(h_panel.waitTrajectories,'XData',[0 0 .75 .75])
+                        set(h_panel.textowaitTrajectories,'String',[num2str(round(sum(.75)*100)) ' %'])
                     
-                    set(h_panel.waitTrajectories,'XData',[0 0 1 1])
-                    set(h_panel.textowaitTrajectories,'String',[num2str(round(sum(1)*100)) ' %'])
+                        set(h_panel.waitTrajectories,'XData',[0 0 1 1])
+                        set(h_panel.textowaitTrajectories,'String',[num2str(round(sum(1)*100)) ' %'])
+                    end 
                     
                     load([datosegm.directorio 'mancha2pez.mat'])
                     man2pez=variable;
@@ -914,9 +920,10 @@ try
                     
                     
                     progreso=1;
-                    set(h_panel.waitFillGaps,'XData',[0 0 progreso progreso])
-                    set(h_panel.textowaitFillGaps,'String',[num2str(round(progreso*100)) ' %'])
-
+                    if datosegm.muestrapanel
+                        set(h_panel.waitFillGaps,'XData',[0 0 progreso progreso])
+                        set(h_panel.textowaitFillGaps,'String',[num2str(round(progreso*100)) ' %'])
+                    end
                     datosegm.tiempos.fillgaps(2)=now;
                     
                     

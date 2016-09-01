@@ -8,8 +8,11 @@
 % before.
 
 function idTracker_batch(path_to_datosegm)
-
 load(path_to_datosegm)
 datosegm=variable;
 datosegm.empezarsinmas=true;
-idTracker(datosegm)
+datosegm.muestrapanel=false;
+datosegm.saltatodo=false;
+variable=datosegm;
+save(path_to_datosegm,'variable')
+idTracker(path_to_datosegm)
